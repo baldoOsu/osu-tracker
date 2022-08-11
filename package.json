@@ -1,0 +1,24 @@
+{
+  "name": "osu-tracker",
+  "version": "0.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "tsc -w"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/baldoOsu/osu-tracker.git"
+  },
+  "author": "Robert Peptan",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/baldoOsu/osu-tracker/issues"
+  },
+  "homepage": "https://github.com/baldoOsu/osu-tracker#readme",
+  "dependencies": {
+    "axios": "^0.27.2",
+    "discord.js": "^13.8.1",
+    "wokcommands": "^1.5.3"
+  }
+}
