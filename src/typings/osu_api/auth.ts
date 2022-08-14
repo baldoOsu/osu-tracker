@@ -1,6 +1,6 @@
 export interface OAuthCreds {
-  clientId: number,
-  clientSecret: string,
+  client_id: number,
+  client_secret: string,
   grant_type: 'client_credentials',
   scope: 'public'
 }
