@@ -1,7 +1,7 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
-import axios, { AxiosRequestHeaders } from 'axios';
+import axios, { AxiosRequestHeaders, AxiosResponse } from 'axios';
 import { OAuthCreds, OAuthResponse } from '../typings/osu_api/auth';
 import { RecentResponse, Beatmap } from '../typings/osu_api/maps';
 
@@ -13,8 +13,8 @@ const isOAuthResponse = (response: unknown): response is OAuthResponse =>
 const isCredsDefined = (creds: { access_token: string, expires_in: number }): boolean =>
   creds.access_token !== undefined && creds.expires_in !== undefined;
 
-const hasDataProperty = (response: unknown): response is { data: unknown } =>
-  (response as { data: unknown }).data !== undefined;
+const isAxiosResponse = (response: unknown): response is AxiosResponse =>
+  (response as AxiosResponse).data !== undefined;
 
 const isDataNonEmptyArray = (response: unknown): response is { data: unknown[] } =>
   (response as { data: unknown[] }).data !== undefined && (response as { data: unknown[] }).data.length > 0;
@@ -61,6 +61,22 @@ export class osuApi {
     } );
   }
 
+  async getUsers(playerIds: string[]): Promise<any> {
+    let endpoint = `/users`;
+    return new Promise(async(resolve, reject) => {
+      const resp = await this._request('GET', endpoint, {
+        params: {
+          "ids[]": playerIds.join(',')
+        },
+        headers: this._buildDefaultHeaders()
+      }).catch(err => {
+        console.error(`[osuApi] Error in getUsers request`, err);
+        reject(err);
+      } );
+      resolve(resp?.data);
+    } );
+  }
+
   async getLastMapInfo(player: string): Promise<Beatmap> {
     let endpoint = `/users/${player}/scores/recent?limit=1&include_fails=true&mode=osu`;
     // let failError = new Error('[osuApi] getLastMapInfo request failed');
@@ -72,9 +88,15 @@ export class osuApi {
         reject(err);
       } );
 
+      if(!isAxiosResponse(recentScore)) {
+        reject(new Error('[osuApi] getLastMapInfo request failed'));
+        return;
+      }
+
       if(!isDataNonEmptyArray(recentScore)) {
         reject(new Error('[osuApi] getLastMapInfo request failed, no data'));
       }
+
 
       if(!isRecentResponse(recentScore.data[0])) {
         reject(new Error('[osuApi] getLastMapInfo request failed, recent score is not a valid response'));
@@ -115,8 +137,9 @@ export class osuApi {
         console.error(failError, err);
         reject(err);
       } );
-      if(!hasDataProperty(resp)) {
+      if(!isAxiosResponse(resp)) {
         reject(failError);
+        return;
       }
       if(!isBeatmap(resp.data)) {
         reject(failError);
@@ -181,7 +204,7 @@ export class osuApi {
     });
   }
 
-  async _request(method: string, endpoint: string, args: { data?: object, params?: object,  headers?: AxiosRequestHeaders } ): Promise<any> {
+  async _request(method: string, endpoint: string, args: { data?: object, params?: object,  headers?: AxiosRequestHeaders } ): Promise<AxiosResponse> {
     return new Promise(async(resolve, reject) => {
       const resp = await axios.request({
         method: method,
@@ -193,7 +216,10 @@ export class osuApi {
         console.error(`[osuApi] Error in ${method} request to ${endpoint}`, err);
         reject(err);
       });
-      resolve(resp);
+      if(!resp) reject(new Error(`[osuApi] ${method} request to ${endpoint} failed`));
+      else {
+        resolve(resp);
+      }
     });
   }
 
